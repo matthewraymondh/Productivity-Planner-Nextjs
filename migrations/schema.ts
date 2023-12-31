@@ -1,116 +1,76 @@
 import {
   pgTable,
-  foreignKey,
   pgEnum,
   uuid,
-  timestamp,
   text,
-  jsonb,
   boolean,
+  jsonb,
+  foreignKey,
   bigint,
   integer,
+  timestamp,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 import { sql } from "drizzle-orm";
 export const keyStatus = pgEnum("key_status", [
-  "expired",
-  "invalid",
-  "valid",
   "default",
+  "valid",
+  "invalid",
+  "expired",
 ]);
 export const keyType = pgEnum("key_type", [
-  "stream_xchacha20",
-  "secretstream",
-  "secretbox",
-  "kdf",
-  "generichash",
-  "shorthash",
-  "auth",
-  "hmacsha256",
-  "hmacsha512",
-  "aead-det",
   "aead-ietf",
+  "aead-det",
+  "hmacsha512",
+  "hmacsha256",
+  "auth",
+  "shorthash",
+  "generichash",
+  "kdf",
+  "secretbox",
+  "secretstream",
+  "stream_xchacha20",
 ]);
-export const factorType = pgEnum("factor_type", ["webauthn", "totp"]);
-export const factorStatus = pgEnum("factor_status", ["verified", "unverified"]);
-export const aalLevel = pgEnum("aal_level", ["aal3", "aal2", "aal1"]);
+export const aalLevel = pgEnum("aal_level", ["aal1", "aal2", "aal3"]);
 export const codeChallengeMethod = pgEnum("code_challenge_method", [
-  "plain",
   "s256",
+  "plain",
 ]);
-export const pricingType = pgEnum("pricing_type", ["recurring", "one_time"]);
+export const factorStatus = pgEnum("factor_status", ["unverified", "verified"]);
+export const factorType = pgEnum("factor_type", ["totp", "webauthn"]);
+export const equalityOp = pgEnum("equality_op", [
+  "eq",
+  "neq",
+  "lt",
+  "lte",
+  "gt",
+  "gte",
+  "in",
+]);
+export const action = pgEnum("action", [
+  "INSERT",
+  "UPDATE",
+  "DELETE",
+  "TRUNCATE",
+  "ERROR",
+]);
+export const pricingType = pgEnum("pricing_type", ["one_time", "recurring"]);
 export const pricingPlanInterval = pgEnum("pricing_plan_interval", [
-  "year",
-  "month",
-  "week",
   "day",
+  "week",
+  "month",
+  "year",
 ]);
 export const subscriptionStatus = pgEnum("subscription_status", [
-  "unpaid",
-  "past_due",
-  "incomplete_expired",
-  "incomplete",
-  "canceled",
-  "active",
   "trialing",
+  "active",
+  "canceled",
+  "incomplete",
+  "incomplete_expired",
+  "past_due",
+  "unpaid",
 ]);
-
-export const files = pgTable("files", {
-  id: uuid("id").defaultRandom().primaryKey().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
-    .defaultNow()
-    .notNull(),
-  title: text("title").notNull(),
-  iconId: text("icon_id").notNull(),
-  data: text("data"),
-  inTrash: text("in_trash"),
-  bannerUrl: text("banner_url"),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-  folderId: uuid("folder_id")
-    .notNull()
-    .references(() => folders.id, { onDelete: "cascade" }),
-});
-
-export const folders = pgTable("folders", {
-  id: uuid("id").defaultRandom().primaryKey().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
-    .defaultNow()
-    .notNull(),
-  title: text("title").notNull(),
-  iconId: text("icon_id").notNull(),
-  data: text("data"),
-  inTrash: text("in_trash"),
-  bannerUrl: text("banner_url"),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspaces.id, { onDelete: "cascade" }),
-});
-
-export const workspaces = pgTable("workspaces", {
-  id: uuid("id").defaultRandom().primaryKey().notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
-    .defaultNow()
-    .notNull(),
-  workspaceOwner: uuid("workspace_owner").notNull(),
-  title: text("title").notNull(),
-  iconId: text("icon_id").notNull(),
-  data: text("data"),
-  inTrash: text("in_trash"),
-  logo: text("logo"),
-  bannerUrl: text("banner_url"),
-});
-
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().notNull(),
-  fullName: text("full_name"),
-  avatarUrl: text("avatar_url"),
-  billingAddress: jsonb("billing_address"),
-  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }),
-  paymentMethod: jsonb("payment_method"),
-  email: text("email"),
-});
 
 export const customers = pgTable("customers", {
   id: uuid("id").primaryKey().notNull(),
@@ -128,7 +88,9 @@ export const products = pgTable("products", {
 
 export const prices = pgTable("prices", {
   id: text("id").primaryKey().notNull(),
-  productId: text("product_id").references(() => products.id),
+  productId: text("product_id")
+    .references(() => products.id)
+    .references(() => products.id),
   active: boolean("active"),
   description: text("description"),
   // You can use { mode: "bigint" } if numbers are exceeding js number limitations
@@ -185,3 +147,87 @@ export const subscriptions = pgTable("subscriptions", {
     mode: "string",
   }).default(sql`now()`),
 });
+
+export const workspaces = pgTable("workspaces", {
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
+  createdAt: timestamp("created_at", {
+    withTimezone: true,
+    mode: "string",
+  }).defaultNow(),
+  workspaceOwner: uuid("workspace_owner")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  iconId: text("icon_id").notNull(),
+  data: text("data"),
+  inTrash: text("in_trash"),
+  logo: text("logo"),
+  bannerUrl: text("banner_url"),
+});
+
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }),
+  fullName: text("full_name"),
+  avatarUrl: text("avatar_url"),
+  website: text("website"),
+  email: text("email"),
+  billingAddress: jsonb("billing_address"),
+  paymentMethod: jsonb("payment_method"),
+});
+
+export const folders = pgTable("folders", {
+  folderId: uuid("folder_id").defaultRandom().primaryKey().notNull(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .defaultNow()
+    .notNull(),
+  title: text("title").notNull(),
+  iconId: text("icon_id").notNull(),
+  data: text("data"),
+  inTrash: text("in_trash"),
+  bannerUrl: text("banner_url"),
+});
+
+export const files = pgTable("files", {
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
+  folderId: uuid("folder_id")
+    .notNull()
+    .references(() => folders.folderId, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .defaultNow()
+    .notNull(),
+  title: text("title").notNull(),
+  iconId: text("icon_id").notNull(),
+  data: text("data"),
+  inTrash: text("in_trash"),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  bannerUrl: text("banner_url"),
+});
+
+export const collaborators = pgTable(
+  "collaborators",
+  {
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+  },
+  (table) => {
+    return {
+      collaboratorsUserIdWorkspaceId: primaryKey(
+        table.workspaceId,
+        table.userId
+      ),
+    };
+  }
+);
